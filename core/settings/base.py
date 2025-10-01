@@ -27,23 +27,27 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "dj_rest_auth",
     "dj_rest_auth.registration",
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
+    "corsheaders",
     "allauth.socialaccount.providers.google",
+    "users",  # Our custom users app
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "allauth.account.middleware.AccountMiddleware",  # Moved up for proper auth flow
     "django.middleware.common.CommonMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # Add CORS middleware here
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -127,7 +131,8 @@ SITE_ID = 1  # Required for django-allauth
 REST_FRAMEWORK = {
     # Use JWT for authentication, standard for mobile/SPA clients
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # Use dj-rest-auth's JWTAuthentication to support cookie-based auth
+        "dj_rest_auth.jwt_auth.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
@@ -147,19 +152,28 @@ SIMPLE_JWT = {
 # Dj-Rest-Auth Configuration
 # https://dj-rest-auth.readthedocs.io/en/latest/configuration.html
 REST_AUTH = {
+    "SESSION_LOGIN": False,  # We are using token-based auth, not session-based
     "USE_JWT": True,
     "JWT_AUTH_HTTPONLY": False,  # Must be False for mobile app to access the token
+    # --- Cookie-based Authentication Settings ---
+    # These settings will cause dj-rest-auth to set HttpOnly cookies for auth tokens.
+    "JWT_AUTH_COOKIE": "homeventory-access-token",
+    "JWT_AUTH_REFRESH_COOKIE": "homeventory-refresh-token",
+    "JWT_AUTH_SAMESITE": "Lax",  # Use 'Strict' for better security if frontend and backend are on the same domain
+    "REGISTER_SERIALIZER": "users.serializers.CustomRegisterSerializer",
 }
 
 # Allauth Configuration
 # https://allauth.org/docs/configuration/
-# ACCOUNT_AUTHENTICATION_METHOD = "email"
-# ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = "email"
+ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = "none"  # Set to "mandatory" for production if desired
-# ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
-ACCOUNT_ADAPTER = "users.adapter.CustomAccountAdapter"
+ACCOUNT_USERNAME_REQUIRED = False
+# ACCOUNT_LOGIN_METHODS = {
+#     "email"
+# }  # This is a newer setting, the ones above are sufficient
+# ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+# ACCOUNT_ADAPTER = "users.adapter.CustomAccountAdapter"
 
 # Allauth Social Account Configuration
 SOCIALACCOUNT_PROVIDERS = {
@@ -172,3 +186,14 @@ SOCIALACCOUNT_PROVIDERS = {
         "AUTH_PARAMS": {"access_type": "online"},
     }
 }
+
+# CORS Configuration
+# https://github.com/adamchainz/django-cors-headers
+# ------------------------------------------------------------------------------
+# A list of origins that are authorized to make cross-site HTTP requests.
+# Replace 'http://localhost:3000' with your actual frontend URL in production.
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # For React (default port)
+    "http://localhost:8080",  # For Vue (default port)
+]
+CORS_ALLOW_CREDENTIALS = True  # This is the crucial part for cookie-based auth
