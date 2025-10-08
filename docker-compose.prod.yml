@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Jangan mount volume kode di produksi. Kode harus ada di dalam image.
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env # Pastikan .env berisi variabel untuk produksi
+    environment:
+      - DJANGO_SETTINGS_MODULE=core.settings.production
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000"]
+
+  db:
+    image: mysql:8.0
+    cap_add:
+      - SYS_NICE
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${PROD_DB_NAME}
+      MYSQL_USER: ${PROD_DB_USER}
+      MYSQL_PASSWORD: ${PROD_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${PROD_DB_ROOT_PASSWORD}
+    volumes:
+      - mysql_prod_data:/var/lib/mysql
+    # Jangan expose port database ke host di produksi untuk keamanan
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_prod_data:

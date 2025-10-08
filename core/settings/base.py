@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "corsheaders",
     "allauth.socialaccount.providers.google",
-    "users",  # Our custom users app
+    "users",  # Our custom users app - Dihapus karena ditambahkan di bawah dengan UsersConfig
 ]
 
 MIDDLEWARE = [
@@ -122,7 +122,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "users.User"
 
 # Add our new 'users' app to the top of INSTALLED_APPS
-INSTALLED_APPS.insert(0, "users.apps.UsersConfig")
+# INSTALLED_APPS.insert(0, "users.apps.UsersConfig")
 
 # Django Allauth and Dj-Rest-Auth Configuration
 # ------------------------------------------------------------------------------
