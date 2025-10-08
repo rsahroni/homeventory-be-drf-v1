@@ -1,4 +1,5 @@
 from .base import *
+from datetime import timedelta
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -15,3 +16,11 @@ DATABASES = {
         "PORT": env("DEV_DB_PORT"),
     }
 }
+
+# JWT settings for Development (shorter lifespan for easier testing)
+SIMPLE_JWT.update(
+    {
+        "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+        "REFRESH_TOKEN_LIFETIME": timedelta(hours=1),
+    }
+)

@@ -41,9 +41,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # Add CORS middleware here
     "allauth.account.middleware.AccountMiddleware",  # Moved up for proper auth flow
     "django.middleware.common.CommonMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  # Add CORS middleware here
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -128,6 +128,13 @@ AUTH_USER_MODEL = "users.User"
 # ------------------------------------------------------------------------------
 SITE_ID = 1  # Required for django-allauth
 
+AUTHENTICATION_BACKENDS = [
+    # Needed to login by username in Django admin, regardless of `allauth`
+    "django.contrib.auth.backends.ModelBackend",
+    # `allauth` specific authentication methods, such as login by email
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
 REST_FRAMEWORK = {
     # Use JWT for authentication, standard for mobile/SPA clients
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -137,30 +144,44 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
 
-# Simple JWT Configuration
-# https://django-rest-framework-simplejwt.readthedocs.io/en/latest/settings.html
-from datetime import timedelta
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
-    "UPDATE_LAST_LOGIN": True,
-}
-
 # Dj-Rest-Auth Configuration
 # https://dj-rest-auth.readthedocs.io/en/latest/configuration.html
 REST_AUTH = {
-    "SESSION_LOGIN": False,  # We are using token-based auth, not session-based
-    "USE_JWT": True,
-    "JWT_AUTH_HTTPONLY": False,  # Must be False for mobile app to access the token
-    # --- Cookie-based Authentication Settings ---
-    # These settings will cause dj-rest-auth to set HttpOnly cookies for auth tokens.
-    "JWT_AUTH_COOKIE": "homeventory-access-token",
-    "JWT_AUTH_REFRESH_COOKIE": "homeventory-refresh-token",
-    "JWT_AUTH_SAMESITE": "Lax",  # Use 'Strict' for better security if frontend and backend are on the same domain
+    "LOGIN_SERIALIZER": "dj_rest_auth.serializers.LoginSerializer",
+    "TOKEN_SERIALIZER": "dj_rest_auth.serializers.TokenSerializer",
+    "JWT_SERIALIZER": "dj_rest_auth.serializers.JWTSerializer",
+    "JWT_SERIALIZER_WITH_EXPIRATION": "dj_rest_auth.serializers.JWTSerializerWithExpiration",
+    "JWT_TOKEN_CLAIMS_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
+    "USER_DETAILS_SERIALIZER": "dj_rest_auth.serializers.UserDetailsSerializer",
+    "PASSWORD_RESET_SERIALIZER": "dj_rest_auth.serializers.PasswordResetSerializer",
+    "PASSWORD_RESET_CONFIRM_SERIALIZER": "dj_rest_auth.serializers.PasswordResetConfirmSerializer",
+    "PASSWORD_CHANGE_SERIALIZER": "dj_rest_auth.serializers.PasswordChangeSerializer",
     "REGISTER_SERIALIZER": "users.serializers.CustomRegisterSerializer",
+    "REGISTER_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "TOKEN_MODEL": "rest_framework.authtoken.models.Token",
+    "TOKEN_CREATOR": "dj_rest_auth.utils.default_create_token",
+    "PASSWORD_RESET_USE_SITES_DOMAIN": False,
+    "OLD_PASSWORD_FIELD_ENABLED": False,
+    "LOGOUT_ON_PASSWORD_CHANGE": False,
+    "SESSION_LOGIN": True,
+    "USE_JWT": True,
+    "JWT_AUTH_COOKIE": "hvauth",
+    "JWT_AUTH_REFRESH_COOKIE": "hvauth-refresh",
+    "JWT_AUTH_REFRESH_COOKIE_PATH": "/",
+    "JWT_AUTH_SECURE": False,
+    "JWT_AUTH_HTTPONLY": False,
+    "JWT_AUTH_SAMESITE": "Lax",
+    "JWT_AUTH_RETURN_EXPIRATION": False,
+    "JWT_AUTH_COOKIE_USE_CSRF": False,
+    "JWT_AUTH_COOKIE_ENFORCE_CSRF_ON_UNAUTHENTICATED": False,
+}
+
+# Simple JWT Configuration
+# https://django-rest-framework-simplejwt.readthedocs.io/en/latest/settings.html
+SIMPLE_JWT = {
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
 }
 
 # Allauth Configuration
@@ -193,7 +214,8 @@ SOCIALACCOUNT_PROVIDERS = {
 # A list of origins that are authorized to make cross-site HTTP requests.
 # Replace 'http://localhost:3000' with your actual frontend URL in production.
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",  # For Django development server
     "http://localhost:3000",  # For React (default port)
     "http://localhost:8080",  # For Vue (default port)
 ]
-CORS_ALLOW_CREDENTIALS = True  # This is the crucial part for cookie-based auth
+# CORS_ALLOW_CREDENTIALS = True  # This is the crucial part for cookie-based auth

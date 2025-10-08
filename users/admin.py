@@ -15,6 +15,7 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ("is_staff", "is_superuser", "is_active", "groups")
     search_fields = ("email", "first_name", "last_name")
     ordering = ("email",)
+    readonly_fields = ("last_login", "date_joined")
 
     # Customize the fieldsets to reflect the new user model structure
     fieldsets = (
